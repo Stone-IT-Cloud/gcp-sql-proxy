@@ -170,9 +170,9 @@ func generateState() (string, error) {
 }
 
 func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, error) {
-	ln, err := net.Listen("tcp", "127.0.0.1:8080")
+	ln, err := net.Listen("tcp", "localhost:8080")
 	if err != nil {
-		ln, err = net.Listen("tcp", "127.0.0.1:0")
+		ln, err = net.Listen("tcp", "localhost:0")
 		if err != nil {
 			return nil, fmt.Errorf("start callback listener: %w", err)
 		}
@@ -181,7 +181,7 @@ func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, er
 
 	port := ln.Addr().(*net.TCPAddr).Port
 	flowCfg := *cfg
-	flowCfg.RedirectURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+	flowCfg.RedirectURL = fmt.Sprintf("http://localhost:%d", port)
 
 	state, err := generateState()
 	if err != nil {

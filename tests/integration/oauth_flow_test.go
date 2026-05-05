@@ -26,6 +26,42 @@ import (
 
 var oauthAuthGlobalsMu sync.Mutex
 
+func reserveAvailablePort(t *testing.T) int {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve port: %v", err)
+	}
+	defer ln.Close()
+	return ln.Addr().(*net.TCPAddr).Port
+}
+
+func waitForPortReady(t *testing.T, addr string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", addr, 150*time.Millisecond)
+		if err == nil {
+			_ = conn.Close()
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	t.Fatalf("listener did not become ready in %s: %s", timeout, addr)
+}
+
+func buildProxyBinary(t *testing.T) string {
+	t.Helper()
+	repo := oauthRepoRoot(t)
+	binary := filepath.Join(t.TempDir(), "sql-proxy-test-bin")
+	buildCmd := exec.Command("go", "build", "-o", binary, "./cmd/sql-proxy")
+	buildCmd.Dir = repo
+	if output, err := buildCmd.CombinedOutput(); err != nil {
+		t.Fatalf("build proxy binary: %v\n%s", err, string(output))
+	}
+	return binary
+}
+
 func oauthRepoRoot(t *testing.T) string {
 	t.Helper()
 	wd, err := os.Getwd()
@@ -37,7 +73,10 @@ func oauthRepoRoot(t *testing.T) string {
 
 func TestStartupWithoutOAuthCredentialsStillRuns(t *testing.T) {
 	home := t.TempDir()
-	cmd := exec.Command("go", "run", "./cmd/sql-proxy", "--instance", "project:region:instance", "--port", "55433")
+	port := reserveAvailablePort(t)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	binary := buildProxyBinary(t)
+	cmd := exec.Command(binary, "--instance", "project:region:instance", "--port", fmt.Sprintf("%d", port))
 	cmd.Dir = oauthRepoRoot(t)
 	cmd.Env = append(os.Environ(), "HOME="+home, "USERPROFILE="+home)
 
@@ -45,7 +84,7 @@ func TestStartupWithoutOAuthCredentialsStillRuns(t *testing.T) {
 		t.Fatalf("start command: %v", err)
 	}
 
-	time.Sleep(700 * time.Millisecond)
+	waitForPortReady(t, addr, 5*time.Second)
 	if err := cmd.Process.Signal(os.Interrupt); err != nil {
 		_ = cmd.Process.Kill()
 		t.Fatalf("interrupt process: %v", err)
@@ -107,7 +146,7 @@ func TestFirstRunOAuthFlowPersistsTokenAndShowsSuccess(t *testing.T) {
 			redirect, _ := url.QueryUnescape(u.Query().Get("redirect_uri"))
 			state := u.Query().Get("state")
 			cb := fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state)
-			client := &http.Client{Timeout: 1 * time.Second}
+			client := &http.Client{Timeout: 3 * time.Second}
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, cb, nil)
 			if err != nil {
 				return err
@@ -219,7 +258,7 @@ func TestCallbackStateMismatchFailsAuth(t *testing.T) {
 				return err
 			}
 			redirect, _ := url.QueryUnescape(u.Query().Get("redirect_uri"))
-			client := &http.Client{Timeout: 1 * time.Second}
+			client := &http.Client{Timeout: 3 * time.Second}
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/?code=test-code&state=wrong-state", redirect), nil)
 			if err != nil {
 				return err
@@ -253,7 +292,7 @@ func TestCallbackPortFallbackFrom8080(t *testing.T) {
 		auth.OAuthClientSecret = ""
 	}()
 
-	block, err := net.Listen("tcp", "127.0.0.1:8080")
+	block, err := net.Listen("tcp", "localhost:8080")
 	if err != nil {
 		t.Skipf("cannot reserve 8080 in current environment: %v", err)
 	}
@@ -276,7 +315,7 @@ func TestCallbackPortFallbackFrom8080(t *testing.T) {
 			}
 			fmt.Sscanf(ru.Port(), "%d", &fallbackPort)
 			state := u.Query().Get("state")
-			client := &http.Client{Timeout: 1 * time.Second}
+			client := &http.Client{Timeout: 3 * time.Second}
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state), nil)
 			if err != nil {
 				return err

@@ -147,7 +147,7 @@ func TestInvalidTokenRenamedBeforeReauth(t *testing.T) {
 			}
 			redirect, _ := url.QueryUnescape(u.Query().Get("redirect_uri"))
 			state := u.Query().Get("state")
-			client := &http.Client{Timeout: 1 * time.Second}
+			client := &http.Client{Timeout: 3 * time.Second}
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state), nil)
 			if err != nil {
 				return err
