@@ -55,3 +55,8 @@ Expected behavior:
 ```bash
 go test ./...
 ```
+
+## 8) Validate security baseline preservation
+
+- Run integration tests and confirm no startup/config path introduces IAM authentication or private
+  tunnel override keys.

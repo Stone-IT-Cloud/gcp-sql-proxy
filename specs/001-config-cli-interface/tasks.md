@@ -17,10 +17,10 @@
 
 **Purpose**: Project initialization and baseline structure
 
-- [ ] T001 Initialize Go module metadata in `go.mod`
-- [ ] T002 Create project directories `cmd/sql-proxy/`, `internal/config/`, `tests/unit/`, and `tests/integration/`
-- [ ] T003 [P] Add dependency requirements for `github.com/spf13/viper` and `github.com/spf13/pflag` in `go.mod`
-- [ ] T004 [P] Create CLI contract baseline in `specs/001-config-cli-interface/contracts/cli-contract.md` for implementation traceability notes
+- [x] T001 Initialize Go module metadata in `go.mod`
+- [x] T002 Create project directories `cmd/sql-proxy/`, `internal/config/`, `tests/unit/`, and `tests/integration/`
+- [x] T003 [P] Add dependency requirements for `github.com/spf13/viper` and `github.com/spf13/pflag` in `go.mod`
+- [x] T004 [P] Create CLI contract baseline in `specs/001-config-cli-interface/contracts/cli-contract.md` for implementation traceability notes
 
 ---
 
@@ -30,12 +30,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Implement configuration types and constants in `internal/config/config.go`
-- [ ] T006 Implement config directory resolution and creation logic in `internal/config/config.go`
-- [ ] T007 Implement Viper bootstrap (defaults + config path + read behavior) in `internal/config/config.go`
-- [ ] T008 Implement CLI flag registration and binding to Viper in `internal/config/config.go`
-- [ ] T009 Implement startup input validators (instance required, port range `1-65535`) in `internal/config/config.go`
-- [ ] T010 [P] Implement shared user-facing error formatting helpers in `internal/config/config.go`
+- [x] T005 Implement configuration types and constants in `internal/config/config.go`
+- [x] T006 Implement config directory resolution and creation logic in `internal/config/config.go`
+- [x] T007 Implement Viper bootstrap (defaults + config path + read behavior) in `internal/config/config.go`
+- [x] T008 Implement CLI flag registration and binding to Viper in `internal/config/config.go`
+- [x] T009 Implement startup input validators (instance required, port range `1-65535`) in `internal/config/config.go`
+- [x] T010 [P] Implement shared user-facing error formatting helpers in `internal/config/config.go`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -51,16 +51,16 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T011 [P] [US1] Add table-driven unit tests for precedence resolution in `tests/unit/config_init_test.go`
-- [ ] T012 [P] [US1] Add table-driven unit tests for missing instance and invalid port validation in `tests/unit/validation_test.go`
-- [ ] T013 [US1] Add integration startup test for defaults and config-file precedence in `tests/integration/startup_flow_test.go`
+- [x] T011 [P] [US1] Add table-driven unit tests for precedence resolution in `tests/unit/config_init_test.go`
+- [x] T012 [P] [US1] Add table-driven unit tests for missing instance and invalid port validation in `tests/unit/validation_test.go`
+- [x] T013 [US1] Add integration startup test for defaults and config-file precedence in `tests/integration/startup_flow_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Implement `Init()` orchestration for config loading and validation in `internal/config/config.go`
-- [ ] T015 [US1] Implement missing-config non-fatal behavior and malformed-config fatal behavior in `internal/config/config.go`
-- [ ] T016 [US1] Create CLI entrypoint skeleton that calls configuration initialization in `cmd/sql-proxy/main.go`
-- [ ] T017 [US1] Wire resolved configuration values (port and instance) into startup path in `cmd/sql-proxy/main.go`
+- [x] T014 [US1] Implement `Init()` orchestration for config loading and validation in `internal/config/config.go`
+- [x] T015 [US1] Implement missing-config non-fatal behavior and malformed-config fatal behavior in `internal/config/config.go`
+- [x] T016 [US1] Create CLI entrypoint skeleton that calls configuration initialization in `cmd/sql-proxy/main.go`
+- [x] T017 [US1] Wire resolved configuration values (port and instance) into startup path in `cmd/sql-proxy/main.go`
 
 **Checkpoint**: User Story 1 is fully functional and testable independently
 
@@ -74,14 +74,14 @@
 
 ### Tests for User Story 2 (REQUIRED) ⚠️
 
-- [ ] T018 [P] [US2] Add unit tests for port conflict error messaging in `tests/unit/validation_test.go`
-- [ ] T019 [US2] Add integration test for bind failure and exit behavior in `tests/integration/startup_flow_test.go`
+- [x] T018 [P] [US2] Add unit tests for port conflict error messaging in `tests/unit/validation_test.go`
+- [x] T019 [US2] Add integration test for bind failure and exit behavior in `tests/integration/startup_flow_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Implement preflight listener bind check on `127.0.0.1:<port>` in `cmd/sql-proxy/main.go`
-- [ ] T021 [US2] Implement user-friendly port-conflict output with flag/config remediation guidance in `cmd/sql-proxy/main.go`
-- [ ] T022 [US2] Implement explicit exit code `1` path for bind conflicts in `cmd/sql-proxy/main.go`
+- [x] T020 [US2] Implement preflight listener bind check on `127.0.0.1:<port>` in `cmd/sql-proxy/main.go`
+- [x] T021 [US2] Implement user-friendly port-conflict output with flag/config remediation guidance in `cmd/sql-proxy/main.go`
+- [x] T022 [US2] Implement explicit exit code `1` path for bind conflicts in `cmd/sql-proxy/main.go`
 
 **Checkpoint**: User Stories 1 and 2 work independently and together
 
@@ -95,14 +95,14 @@
 
 ### Tests for User Story 3 (REQUIRED) ⚠️
 
-- [ ] T023 [P] [US3] Add unit tests for signal-handling shutdown coordination in `tests/unit/validation_test.go`
-- [ ] T024 [US3] Add integration test for graceful signal-triggered shutdown in `tests/integration/startup_flow_test.go`
+- [x] T023 [P] [US3] Add unit tests for signal-handling shutdown coordination in `tests/unit/validation_test.go`
+- [x] T024 [US3] Add integration test for graceful signal-triggered shutdown in `tests/integration/startup_flow_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Implement signal channel setup and notification wiring in `cmd/sql-proxy/main.go`
-- [ ] T026 [US3] Implement shutdown goroutine to close listener and cancel context in `cmd/sql-proxy/main.go`
-- [ ] T027 [US3] Implement clean termination messaging and shutdown sequencing in `cmd/sql-proxy/main.go`
+- [x] T025 [US3] Implement signal channel setup and notification wiring in `cmd/sql-proxy/main.go`
+- [x] T026 [US3] Implement shutdown goroutine to close listener and cancel context in `cmd/sql-proxy/main.go`
+- [x] T027 [US3] Implement clean termination messaging and shutdown sequencing in `cmd/sql-proxy/main.go`
 
 **Checkpoint**: All user stories are independently functional
 
@@ -112,12 +112,12 @@
 
 **Purpose**: Harden feature quality across all stories
 
-- [ ] T028 [P] Update quickstart validation notes for final CLI behavior in `specs/001-config-cli-interface/quickstart.md`
-- [ ] T029 [P] Add/refresh documentation comments for exported configuration APIs in `internal/config/config.go`
-- [ ] T030 Run full test suite and capture results for feature sign-off using `go test ./...`
-- [ ] T031 Validate cancellation and goroutine cleanup behavior under shutdown/retry scenarios in `tests/integration/startup_flow_test.go`
-- [ ] T032 Validate user-facing startup errors for clarity and consistency in `tests/integration/startup_flow_test.go`
-- [ ] T033 Add regression checks that startup/config changes do not alter IAM auth and private tunnel defaults in `tests/integration/startup_flow_test.go`
+- [x] T028 [P] Update quickstart validation notes for final CLI behavior in `specs/001-config-cli-interface/quickstart.md`
+- [x] T029 [P] Add/refresh documentation comments for exported configuration APIs in `internal/config/config.go`
+- [x] T030 Run full test suite and capture results for feature sign-off using `go test ./...`
+- [x] T031 Validate cancellation and goroutine cleanup behavior under shutdown/retry scenarios in `tests/integration/startup_flow_test.go`
+- [x] T032 Validate user-facing startup errors for clarity and consistency in `tests/integration/startup_flow_test.go`
+- [x] T033 Add regression checks that startup/config changes do not alter IAM auth and private tunnel defaults in `tests/integration/startup_flow_test.go`
 
 ---
 
