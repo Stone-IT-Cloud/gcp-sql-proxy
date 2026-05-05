@@ -13,14 +13,18 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth"
+	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/config"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
+
+var oauthAuthGlobalsMu sync.Mutex
 
 func oauthRepoRoot(t *testing.T) string {
 	t.Helper()
@@ -59,6 +63,16 @@ func TestStartupWithoutOAuthCredentialsStillRuns(t *testing.T) {
 }
 
 func TestOAuthPathDoesNotOverrideSecurityDefaults(t *testing.T) {
+	oauthAuthGlobalsMu.Lock()
+	defer oauthAuthGlobalsMu.Unlock()
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	_, _ = config.InitWithArgs([]string{"--instance", "project:region:instance"})
+	_, _ = auth.GetClient(context.Background())
+
 	// Ensure auth bootstrap doesn't mutate unrelated security defaults in config state.
 	if viper.IsSet("iam_authn") || viper.IsSet("private_tunnel") {
 		t.Fatal("unexpected IAM/private tunnel override detected")
@@ -66,6 +80,9 @@ func TestOAuthPathDoesNotOverrideSecurityDefaults(t *testing.T) {
 }
 
 func TestFirstRunOAuthFlowPersistsTokenAndShowsSuccess(t *testing.T) {
+	oauthAuthGlobalsMu.Lock()
+	defer oauthAuthGlobalsMu.Unlock()
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -86,7 +103,12 @@ func TestFirstRunOAuthFlowPersistsTokenAndShowsSuccess(t *testing.T) {
 			redirect, _ := url.QueryUnescape(u.Query().Get("redirect_uri"))
 			state := u.Query().Get("state")
 			cb := fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state)
-			resp, err := http.Get(cb)
+			client := &http.Client{Timeout: 1 * time.Second}
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, cb, nil)
+			if err != nil {
+				return err
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return err
 			}
@@ -118,6 +140,9 @@ func TestFirstRunOAuthFlowPersistsTokenAndShowsSuccess(t *testing.T) {
 }
 
 func TestValidTokenSkipsBrowserFlow(t *testing.T) {
+	oauthAuthGlobalsMu.Lock()
+	defer oauthAuthGlobalsMu.Unlock()
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -170,6 +195,9 @@ func TestValidTokenSkipsBrowserFlow(t *testing.T) {
 }
 
 func TestCallbackStateMismatchFailsAuth(t *testing.T) {
+	oauthAuthGlobalsMu.Lock()
+	defer oauthAuthGlobalsMu.Unlock()
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -187,7 +215,12 @@ func TestCallbackStateMismatchFailsAuth(t *testing.T) {
 				return err
 			}
 			redirect, _ := url.QueryUnescape(u.Query().Get("redirect_uri"))
-			_, err = http.Get(fmt.Sprintf("%s/?code=test-code&state=wrong-state", redirect))
+			client := &http.Client{Timeout: 1 * time.Second}
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/?code=test-code&state=wrong-state", redirect), nil)
+			if err != nil {
+				return err
+			}
+			_, err = client.Do(req)
 			return err
 		},
 		func(ctx context.Context, cfg *oauth2.Config, code string) (*oauth2.Token, error) {
@@ -203,6 +236,9 @@ func TestCallbackStateMismatchFailsAuth(t *testing.T) {
 }
 
 func TestCallbackPortFallbackFrom8080(t *testing.T) {
+	oauthAuthGlobalsMu.Lock()
+	defer oauthAuthGlobalsMu.Unlock()
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -236,7 +272,12 @@ func TestCallbackPortFallbackFrom8080(t *testing.T) {
 			}
 			fmt.Sscanf(ru.Port(), "%d", &fallbackPort)
 			state := u.Query().Get("state")
-			_, err = http.Get(fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state))
+			client := &http.Client{Timeout: 1 * time.Second}
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state), nil)
+			if err != nil {
+				return err
+			}
+			_, err = client.Do(req)
 			return err
 		},
 		func(ctx context.Context, cfg *oauth2.Config, code string) (*oauth2.Token, error) {

@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -38,6 +39,8 @@ var (
 	ErrMissingCredentials = errors.New("missing oauth client credentials")
 )
 
+var hooksMu sync.RWMutex
+
 var openBrowserFn = openBrowser
 var exchangeTokenFn = func(ctx context.Context, cfg *oauth2.Config, code string) (*oauth2.Token, error) {
 	return cfg.Exchange(ctx, code)
@@ -49,6 +52,9 @@ func SetTestHooks(
 	openFn func(string) error,
 	exchangeFn func(context.Context, *oauth2.Config, string) (*oauth2.Token, error),
 ) func() {
+	hooksMu.Lock()
+	defer hooksMu.Unlock()
+
 	originalOpen := openBrowserFn
 	originalExchange := exchangeTokenFn
 	if openFn != nil {
@@ -58,6 +64,8 @@ func SetTestHooks(
 		exchangeTokenFn = exchangeFn
 	}
 	return func() {
+		hooksMu.Lock()
+		defer hooksMu.Unlock()
 		openBrowserFn = originalOpen
 		exchangeTokenFn = originalExchange
 	}
@@ -127,9 +135,15 @@ func saveToken(path string, token *oauth2.Token) error {
 	if err != nil {
 		return fmt.Errorf("open token file: %w", err)
 	}
-	defer f.Close()
 	if err := json.NewEncoder(f).Encode(token); err != nil {
+		_ = f.Close()
 		return fmt.Errorf("encode token: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close token file: %w", err)
+	}
+	if err := ensureTokenPermissions(path); err != nil {
+		return err
 	}
 	return nil
 }
@@ -165,7 +179,7 @@ func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, er
 
 	port := ln.Addr().(*net.TCPAddr).Port
 	flowCfg := *cfg
-	flowCfg.RedirectURL = fmt.Sprintf("http://localhost:%d", port)
+	flowCfg.RedirectURL = fmt.Sprintf("http://127.0.0.1:%d", port)
 
 	state, err := generateState()
 	if err != nil {
@@ -176,25 +190,43 @@ func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, er
 	errCh := make(chan error, 1)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		if oauthErr := r.URL.Query().Get("error"); oauthErr != "" {
 			http.Error(w, "Authentication failed. You can close this window.", http.StatusBadRequest)
-			errCh <- fmt.Errorf("oauth callback error: %s", oauthErr)
+			select {
+			case errCh <- fmt.Errorf("oauth callback error: %s", oauthErr):
+			default:
+			}
 			return
 		}
 		receivedState := r.URL.Query().Get("state")
 		if receivedState == "" || receivedState != state {
 			http.Error(w, "Authentication failed due to invalid session state.", http.StatusBadRequest)
-			errCh <- ErrStateMismatch
+			select {
+			case errCh <- ErrStateMismatch:
+			default:
+			}
 			return
 		}
 		code := r.URL.Query().Get("code")
 		if code == "" {
 			http.Error(w, "Missing authorization code.", http.StatusBadRequest)
-			errCh <- ErrMissingCode
+			select {
+			case errCh <- ErrMissingCode:
+			default:
+			}
 			return
 		}
 		_, _ = io.WriteString(w, "Success! You can close this window.")
-		codeCh <- code
+		select {
+		case codeCh <- code:
+		default:
+		}
 	})
 
 	server := &http.Server{Handler: mux}
@@ -203,7 +235,12 @@ func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, er
 	}()
 
 	authURL := flowCfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
-	if err := openBrowserFn(authURL); err != nil {
+	hooksMu.RLock()
+	openFn := openBrowserFn
+	exchangeFn := exchangeTokenFn
+	hooksMu.RUnlock()
+
+	if err := openFn(authURL); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not open browser automatically. Open this URL manually:\n%s\n", authURL)
 	}
 
@@ -226,7 +263,7 @@ func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, er
 	_ = server.Shutdown(shutdownCtx)
 	cancel()
 
-	tok, err := exchangeTokenFn(ctx, &flowCfg, code)
+	tok, err := exchangeFn(ctx, &flowCfg, code)
 	if err != nil {
 		return nil, fmt.Errorf("exchange code for token: %w", err)
 	}

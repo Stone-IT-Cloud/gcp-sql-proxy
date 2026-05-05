@@ -10,12 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth"
 	"golang.org/x/oauth2"
 )
+
+var authGlobalsMu sync.Mutex
 
 func TestGetClientWithoutCredentials(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
@@ -28,6 +31,9 @@ func TestGetClientWithoutCredentials(t *testing.T) {
 }
 
 func TestBuildOAuthConfigHasExpectedRedirectAndScope(t *testing.T) {
+	authGlobalsMu.Lock()
+	defer authGlobalsMu.Unlock()
+
 	auth.OAuthClientID = "test-client"
 	auth.OAuthClientSecret = "test-secret"
 	defer func() {
@@ -48,6 +54,9 @@ func TestBuildOAuthConfigHasExpectedRedirectAndScope(t *testing.T) {
 }
 
 func TestTokenFilePermissions(t *testing.T) {
+	authGlobalsMu.Lock()
+	defer authGlobalsMu.Unlock()
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -57,20 +66,46 @@ func TestTokenFilePermissions(t *testing.T) {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	token := oauth2.Token{
-		AccessToken:  "access",
-		RefreshToken: "refresh",
+	seedToken, err := json.Marshal(oauth2.Token{
+		AccessToken:  "seed-access",
+		RefreshToken: "seed-refresh",
 		TokenType:    "Bearer",
 		Expiry:       time.Now().Add(time.Hour),
-	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+	})
 	if err != nil {
-		t.Fatalf("open token file: %v", err)
+		t.Fatalf("marshal token: %v", err)
 	}
-	if err := json.NewEncoder(f).Encode(&token); err != nil {
-		t.Fatalf("encode token: %v", err)
+	if err := os.WriteFile(path, seedToken, 0o644); err != nil {
+		t.Fatalf("write token file: %v", err)
 	}
-	_ = f.Close()
+
+	auth.OAuthClientID = "test-client"
+	auth.OAuthClientSecret = "test-secret"
+	defer func() {
+		auth.OAuthClientID = ""
+		auth.OAuthClientSecret = ""
+	}()
+
+	restore := auth.SetTestHooks(
+		func(url string) error { return nil },
+		func(ctx context.Context, cfg *oauth2.Config, code string) (*oauth2.Token, error) {
+			return &oauth2.Token{
+				AccessToken:  "access",
+				RefreshToken: "refresh",
+				TokenType:    "Bearer",
+				Expiry:       time.Now().Add(time.Hour),
+			}, nil
+		},
+	)
+	defer restore()
+
+	client, err := auth.GetClient(context.Background())
+	if err != nil {
+		t.Fatalf("GetClient returned unexpected error: %v", err)
+	}
+	if client == nil {
+		t.Fatal("expected GetClient to return a client")
+	}
 
 	info, err := os.Stat(path)
 	if err != nil {
@@ -82,6 +117,9 @@ func TestTokenFilePermissions(t *testing.T) {
 }
 
 func TestInvalidTokenRenamedBeforeReauth(t *testing.T) {
+	authGlobalsMu.Lock()
+	defer authGlobalsMu.Unlock()
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -109,7 +147,12 @@ func TestInvalidTokenRenamedBeforeReauth(t *testing.T) {
 			}
 			redirect, _ := url.QueryUnescape(u.Query().Get("redirect_uri"))
 			state := u.Query().Get("state")
-			_, err = http.Get(fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state))
+			client := &http.Client{Timeout: 1 * time.Second}
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/?code=test-code&state=%s", redirect, state), nil)
+			if err != nil {
+				return err
+			}
+			_, err = client.Do(req)
 			return err
 		},
 		func(ctx context.Context, cfg *oauth2.Config, code string) (*oauth2.Token, error) {
@@ -122,7 +165,13 @@ func TestInvalidTokenRenamedBeforeReauth(t *testing.T) {
 	)
 	defer restore()
 
-	_, _ = auth.GetClient(context.Background())
+	client, err := auth.GetClient(context.Background())
+	if err != nil {
+		t.Fatalf("GetClient returned unexpected error: %v", err)
+	}
+	if client == nil {
+		t.Fatal("expected GetClient to return a client")
+	}
 
 	entries, err := os.ReadDir(filepath.Dir(tokenPath))
 	if err != nil {
