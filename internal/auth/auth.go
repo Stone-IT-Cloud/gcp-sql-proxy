@@ -25,6 +25,7 @@ const (
 	oauthScope         = "https://www.googleapis.com/auth/sqlservice.admin"
 	defaultRedirectURL = "http://localhost:8080"
 	defaultTokenName   = "token.json"
+	authFlowTimeout    = 2 * time.Minute
 )
 
 var (
@@ -37,6 +38,7 @@ var (
 	ErrMissingCode        = errors.New("missing authorization code")
 	ErrStateMismatch      = errors.New("oauth state mismatch")
 	ErrMissingCredentials = errors.New("missing oauth client credentials")
+	ErrAuthTimeout        = errors.New("oauth authentication timed out")
 )
 
 var hooksMu sync.RWMutex
@@ -245,6 +247,9 @@ func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, er
 	}
 
 	var code string
+	timer := time.NewTimer(authFlowTimeout)
+	defer timer.Stop()
+
 	select {
 	case code = <-codeCh:
 	case err = <-errCh:
@@ -257,6 +262,11 @@ func getTokenFromWeb(ctx context.Context, cfg *oauth2.Config) (*oauth2.Token, er
 		_ = server.Shutdown(shutdownCtx)
 		cancel()
 		return nil, ctx.Err()
+	case <-timer.C:
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_ = server.Shutdown(shutdownCtx)
+		cancel()
+		return nil, ErrAuthTimeout
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

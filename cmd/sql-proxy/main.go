@@ -36,11 +36,11 @@ func run() int {
 	}
 	defer listener.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	// OAuth credentials are optional in local/test environments; if configured,
-	// build an authenticated client for downstream dialer initialization.
+	// perform auth bootstrap for downstream dialer initialization.
 	if client, err := auth.GetClient(ctx); err == nil {
 		_ = client
 	} else if !errors.Is(err, auth.ErrMissingCredentials) {
@@ -48,15 +48,10 @@ func run() int {
 		return 1
 	}
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(sigCh)
-
 	go func() {
-		<-sigCh
+		<-ctx.Done()
 		fmt.Fprintln(os.Stdout, "Shutting down proxy...")
 		_ = listener.Close()
-		cancel()
 	}()
 
 	for {

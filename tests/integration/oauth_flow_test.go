@@ -70,8 +70,12 @@ func TestOAuthPathDoesNotOverrideSecurityDefaults(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 
-	_, _ = config.InitWithArgs([]string{"--instance", "project:region:instance"})
-	_, _ = auth.GetClient(context.Background())
+	if _, err := config.InitWithArgs([]string{"--instance", "project:region:instance"}); err != nil {
+		t.Fatalf("config.InitWithArgs() error = %v", err)
+	}
+	if _, err := auth.GetClient(context.Background()); !errors.Is(err, auth.ErrMissingCredentials) {
+		t.Fatalf("auth.GetClient() error = %v, want %v", err, auth.ErrMissingCredentials)
+	}
 
 	// Ensure auth bootstrap doesn't mutate unrelated security defaults in config state.
 	if viper.IsSet("iam_authn") || viper.IsSet("private_tunnel") {
