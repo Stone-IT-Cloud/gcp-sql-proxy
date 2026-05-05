@@ -16,8 +16,8 @@ func TestBuildWorkflowArtifactUploadConfiguration(t *testing.T) {
 
 	text := string(content)
 	required := []string{
-		"uses: actions/upload-artifact@v4",
-		"name: gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}",
+		"uses: actions/upload-artifact@v6",
+		"name: gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}${{ matrix.target_os == 'windows' && '.exe' || '' }}",
 		"retention-days: 14",
 	}
 	for _, needle := range required {

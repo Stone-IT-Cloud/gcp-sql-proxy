@@ -15,6 +15,12 @@ import (
 	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/proxy"
 )
 
+// Build metadata injected at compile time via -ldflags.
+var (
+	version = "dev"
+	commit  = "unknown"
+)
+
 func main() {
 	os.Exit(run())
 }

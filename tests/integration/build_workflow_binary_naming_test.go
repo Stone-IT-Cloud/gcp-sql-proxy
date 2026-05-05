@@ -19,7 +19,7 @@ func TestBuildWorkflowBinaryNaming(t *testing.T) {
 		"binary_name=\"gcp-db-proxy-${GOOS}-${GOARCH}${ext}\"",
 		"if [[ \"${GOOS}\" == \"windows\" ]]; then",
 		"ext=\".exe\"",
-		"path: dist/gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}*",
+		"path: dist/gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}${{ matrix.target_os == 'windows' && '.exe' || '' }}",
 	}
 	for _, needle := range required {
 		if !strings.Contains(text, needle) {

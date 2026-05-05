@@ -22,7 +22,7 @@ jobs:
           - os: ubuntu-latest
             target_os: linux
             target_arch: amd64
-          - os: windows-latest
+          - os: windows-2025-vs2026
             target_os: windows
             target_arch: amd64
           - os: macos-latest
@@ -33,10 +33,10 @@ jobs:
             target_arch: arm64
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
@@ -58,8 +58,8 @@ jobs:
             -o "dist/${binary_name}" ./cmd/sql-proxy
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}
-          path: dist/gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}*
+          name: gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}${{ matrix.target_os == 'windows' && '.exe' || '' }}
+          path: dist/gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}${{ matrix.target_os == 'windows' && '.exe' || '' }}
           retention-days: 14
