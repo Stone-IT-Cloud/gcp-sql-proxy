@@ -1,0 +1,13 @@
+repos:
+  - repo: local
+    hooks:
+      - id: gofmt
+        types: [go]
+      - id: goimports
+        types: [go]
+      - id: go-mod-tidy
+        files: '^(go\.mod|go\.sum|.*\.go)$'
+        pass_filenames: false
+      - id: go-test
+        files: '^(go\.mod|go\.sum|.*\.go)$'
+        pass_filenames: false

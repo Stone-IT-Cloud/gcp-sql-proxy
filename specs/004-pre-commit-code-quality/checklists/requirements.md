@@ -1,8 +1,8 @@
-# Specification Quality Checklist: Cloud SQL Proxy and IAP Tunneling
+# Specification Quality Checklist: Pre-commit Code Quality Gates
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-05-05
-**Feature**: `specs/003-cloud-sql-iap-tunnel/spec.md`
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 
@@ -31,4 +31,4 @@
 
 ## Notes
 
-- Validation passed on first iteration; specification is ready for `/speckit-clarify` or `/speckit-plan`.
+- Validation passed on first iteration; no unresolved clarification markers.

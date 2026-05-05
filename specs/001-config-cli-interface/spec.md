@@ -1,8 +1,8 @@
 # Feature Specification: Configuration and CLI Interface
 
-**Feature Branch**: `001-config-cli-interface`  
-**Created**: 2026-05-05  
-**Status**: Draft  
+**Feature Branch**: `001-config-cli-interface`
+**Created**: 2026-05-05
+**Status**: Draft
 **Input**: User description: "Spec 01: Configuration and CLI Interface"
 
 ## Clarifications

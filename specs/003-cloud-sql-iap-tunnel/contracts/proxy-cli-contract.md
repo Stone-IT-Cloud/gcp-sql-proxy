@@ -55,9 +55,9 @@ Password: [LEAVE EMPTY]
 
 ### Errors (STDERR)
 
-- Missing / failed auth: actionable, single-paragraph guidance.  
-- Permission denied (403-class): include DevOps escalation AND mention likely roles `roles/cloudsql.client` + `roles/iap.tunnelResourceAccessor` without pretending definitive diagnosis when uncertain.  
-- Permission **check unavailable**: distinct wording from denial — instruct retry / VPN / outage suspicion.  
+- Missing / failed auth: actionable, single-paragraph guidance.
+- Permission denied (403-class): include DevOps escalation AND mention likely roles `roles/cloudsql.client` + `roles/iap.tunnelResourceAccessor` without pretending definitive diagnosis when uncertain.
+- Permission **check unavailable**: distinct wording from denial — instruct retry / VPN / outage suspicion.
 - Forbidden: raw HTTP payloads, stack traces.
 
 ## Compatibility Notes

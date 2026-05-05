@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
-	"google.golang.org/api/sqladmin/v1beta4"
+	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 )
 
 // instancesGetFn is a test injection point to simulate sqladmin.instances.get outcomes.

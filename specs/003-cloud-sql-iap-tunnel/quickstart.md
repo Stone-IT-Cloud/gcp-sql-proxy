@@ -34,8 +34,8 @@ psql "host=127.0.0.1 port=55432 dbname=postgres user=you@example.com sslmode=dis
 
 ## Negative testing (operator view)
 
-1. Revoke `cloudsql.client` temporarily → command MUST fail during pre-flight with DevOps guidance (not a hang).  
-2. Disconnect network → expect **permission check unavailable** class message (FR-005a).  
+1. Revoke `cloudsql.client` temporarily → command MUST fail during pre-flight with DevOps guidance (not a hang).
+2. Disconnect network → expect **permission check unavailable** class message (FR-005a).
 3. Omit OAuth env / token → expect authentication failure before relay loop.
 
 ## Automated tests

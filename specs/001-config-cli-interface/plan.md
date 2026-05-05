@@ -12,15 +12,15 @@ supporting clean signal-based shutdown.
 
 ## Technical Context
 
-**Language/Version**: Go (stable current release via Go modules)  
-**Primary Dependencies**: `github.com/spf13/viper`, `github.com/spf13/pflag`  
-**Storage**: Local filesystem (`~/.sql-proxy/config.yaml`)  
-**Testing**: Go `testing` package with table-driven unit tests + integration tests for startup flows  
-**Target Platform**: Windows, macOS, Linux  
-**Project Type**: CLI application  
-**Performance Goals**: Validate startup inputs and detect port conflicts in under 1 second locally  
+**Language/Version**: Go (stable current release via Go modules)
+**Primary Dependencies**: `github.com/spf13/viper`, `github.com/spf13/pflag`
+**Storage**: Local filesystem (`~/.sql-proxy/config.yaml`)
+**Testing**: Go `testing` package with table-driven unit tests + integration tests for startup flows
+**Target Platform**: Windows, macOS, Linux
+**Project Type**: CLI application
+**Performance Goals**: Validate startup inputs and detect port conflicts in under 1 second locally
 **Constraints**: Must bind to `127.0.0.1:<port>`; valid port range `1-65535`; no panic-based flow;
-must preserve existing IAM authentication and private tunnel defaults  
+must preserve existing IAM authentication and private tunnel defaults
 **Scale/Scope**: Single-process local CLI runtime; one listener instance per execution
 
 ## Constitution Check
