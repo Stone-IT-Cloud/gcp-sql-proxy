@@ -22,7 +22,11 @@ import (
 )
 
 const (
-	oauthScope         = "https://www.googleapis.com/auth/sqlservice.admin"
+	sqlAdminScope      = "https://www.googleapis.com/auth/sqlservice.admin"
+	cloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"
+	sqlLoginScope      = "https://www.googleapis.com/auth/sqlservice.login"
+	userInfoEmailScope = "https://www.googleapis.com/auth/userinfo.email"
+
 	defaultRedirectURL = "http://localhost:8080"
 	defaultTokenName   = "token.json"
 	authFlowTimeout    = 2 * time.Minute
@@ -78,7 +82,7 @@ func oauthConfig(redirectURL string) *oauth2.Config {
 		ClientID:     OAuthClientID,
 		ClientSecret: OAuthClientSecret,
 		Endpoint:     google.Endpoint,
-		Scopes:       []string{oauthScope},
+		Scopes:       []string{sqlAdminScope, cloudPlatformScope, sqlLoginScope, userInfoEmailScope},
 		RedirectURL:  redirectURL,
 	}
 }

@@ -48,8 +48,19 @@ func TestBuildOAuthConfigHasExpectedRedirectAndScope(t *testing.T) {
 	if cfg.RedirectURL != "http://localhost:8080" {
 		t.Fatalf("redirect url = %q, want http://localhost:8080", cfg.RedirectURL)
 	}
-	if len(cfg.Scopes) != 1 || cfg.Scopes[0] != "https://www.googleapis.com/auth/sqlservice.admin" {
-		t.Fatalf("scopes = %v, want sqlservice.admin scope", cfg.Scopes)
+	want := []string{
+		"https://www.googleapis.com/auth/sqlservice.admin",
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/sqlservice.login",
+		"https://www.googleapis.com/auth/userinfo.email",
+	}
+	if len(cfg.Scopes) != len(want) {
+		t.Fatalf("scopes length = %d, want %d (%v)", len(cfg.Scopes), len(want), cfg.Scopes)
+	}
+	for i := range want {
+		if cfg.Scopes[i] != want[i] {
+			t.Fatalf("scopes[%d] = %q, want %q (all scopes: %v)", i, cfg.Scopes[i], want[i], cfg.Scopes)
+		}
 	}
 }
 
