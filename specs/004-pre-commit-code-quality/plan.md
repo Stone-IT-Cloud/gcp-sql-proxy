@@ -17,14 +17,14 @@ Introduce repository-level local quality gates using pre-commit so every commit 
   the iteration process.
 -->
 
-**Language/Version**: Go 1.25.7, YAML-based tool configuration  
-**Primary Dependencies**: pre-commit, pre-commit-hooks, golangci-lint pre-commit hook  
-**Storage**: N/A (configuration-only feature; files in repository)  
-**Testing**: `go test -short ./...` via pre-commit local hook and existing Go test suites  
-**Target Platform**: Contributor development environments on Windows, macOS, and Linux  
-**Project Type**: Go CLI application  
-**Performance Goals**: At least 95% of commit attempts complete pre-commit validation within 120 seconds  
-**Constraints**: Missing required tooling must block commit with install guidance; Go-specific checks run only for staged Go-related files  
+**Language/Version**: Go 1.25.7, YAML-based tool configuration
+**Primary Dependencies**: pre-commit, pre-commit-hooks, golangci-lint pre-commit hook
+**Storage**: N/A (configuration-only feature; files in repository)
+**Testing**: `go test -short ./...` via pre-commit local hook and existing Go test suites
+**Target Platform**: Contributor development environments on Windows, macOS, and Linux
+**Project Type**: Go CLI application
+**Performance Goals**: At least 95% of commit attempts complete pre-commit validation within 120 seconds
+**Constraints**: Missing required tooling must block commit with install guidance; Go-specific checks run only for staged Go-related files
 **Scale/Scope**: Repository-wide pre-commit enforcement for all contributors and all local commits
 
 ## Constitution Check

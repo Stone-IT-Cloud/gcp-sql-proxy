@@ -1,8 +1,8 @@
 # Feature Specification: Pre-commit Code Quality Gates
 
-**Feature Branch**: `004-pre-commit-code-quality`  
-**Created**: 2026-05-05  
-**Status**: Draft  
+**Feature Branch**: `004-pre-commit-code-quality`
+**Created**: 2026-05-05
+**Status**: Draft
 **Input**: User description: "Spec 04: Pre-commit Hooks for Code Quality"
 
 ## Clarifications

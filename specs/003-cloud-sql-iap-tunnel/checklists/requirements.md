@@ -1,7 +1,7 @@
 # Specification Quality Checklist: Cloud SQL Proxy and IAP Tunneling
 
-**Purpose**: Validate specification completeness and quality before proceeding to planning  
-**Created**: 2026-05-05  
+**Purpose**: Validate specification completeness and quality before proceeding to planning
+**Created**: 2026-05-05
 **Feature**: `specs/003-cloud-sql-iap-tunnel/spec.md`
 
 ## Content Quality

@@ -46,7 +46,7 @@ Interpret outcomes as:
 
 **Alternatives considered**:
 
-- **Skip pre-flight entirely** — Rejected (conflicts FR-004/FR-005).  
+- **Skip pre-flight entirely** — Rejected (conflicts FR-004/FR-005).
 - **Separate IAP API probe first** — Deferred to implementation if distinguishable diagnostics are feasible without expanding scope prematurely (Cloud SQL connectivity may indirectly exercise IAP prerequisites).
 
 ---
@@ -59,7 +59,7 @@ Interpret outcomes as:
 
 **Alternatives considered**:
 
-- Print opaque numeric subject — Rejected as primary (not acceptable SQL client UX).  
+- Print opaque numeric subject — Rejected as primary (not acceptable SQL client UX).
 - Require manual `--user` flag — Rejected unless future spec explicitly widens CLI contract.
 
 ---

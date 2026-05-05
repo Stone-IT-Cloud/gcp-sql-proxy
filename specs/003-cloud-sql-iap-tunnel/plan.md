@@ -1,6 +1,6 @@
 # Implementation Plan: Cloud SQL Proxy and IAP Tunneling
 
-**Branch**: `003-cloud-sql-iap-tunnel` | **Date**: 2026-05-05 | **Spec**: `specs/003-cloud-sql-iap-tunnel/spec.md`  
+**Branch**: `003-cloud-sql-iap-tunnel` | **Date**: 2026-05-05 | **Spec**: `specs/003-cloud-sql-iap-tunnel/spec.md`
 **Input**: Feature specification from `/specs/003-cloud-sql-iap-tunnel/spec.md` (plus implementation outline from `/speckit-plan` command)
 
 ## Summary
@@ -9,11 +9,11 @@ Deliver a localhost TCP bridge to Cloud SQL for PostgreSQL that uses the authent
 
 ## Technical Context
 
-**Language/Version**: Go 1.25.x (repo `go.mod`)  
-**Primary Dependencies**:  
-- `cloud.google.com/go/cloudsqlconn` — Cloud SQL Go connector dialer (`NewDialer`, `Dial`)  
-- `google.golang.org/api/sqladmin/v1beta4` — SQL Admin REST client for pre-flight (`Instances.Get`)  
-- `google.golang.org/api/googleapi` — Detect HTTP status for permission/classification UX  
+**Language/Version**: Go 1.25.x (repo `go.mod`)
+**Primary Dependencies**:
+- `cloud.google.com/go/cloudsqlconn` — Cloud SQL Go connector dialer (`NewDialer`, `Dial`)
+- `google.golang.org/api/sqladmin/v1beta4` — SQL Admin REST client for pre-flight (`Instances.Get`)
+- `google.golang.org/api/googleapi` — Detect HTTP status for permission/classification UX
 Existing: `internal/auth`, `internal/config`, `golang.org/x/oauth2`, `spf13/viper` / `pflag`
 
 **Storage**: Configuration and tokens remain in Feature 02 paths (`~/.sql-proxy/`); tunnel feature does not add new persisted stores.
@@ -26,12 +26,12 @@ Existing: `internal/auth`, `internal/config`, `golang.org/x/oauth2`, `spf13/vipe
 
 **Performance Goals**: Pre-flight succeeds or fails distinctly before arbitrary client-visible dial timeouts align with SC-001 (≤ ~5 s for happy path startup in well-connected environments); per-connection isolation per SC-004.
 
-**Constraints**:  
-- MUST use IAM DB auth by default (`WithIAMAuthN()`).  
-- MUST use private IP for dials (`WithDefaultDialOptions(WithPrivateIP())`).  
-- MUST pass OAuth-derived credentials into connector per Feature 02 (connector requires explicit token sourcing when IAM auth is enabled — see research.md).  
-- MUST fail startup if authenticated principal email cannot be resolved (spec FR-010a).  
-- MUST fail startup when permission pre-flight outcome is unknown (network/API ambiguity) — spec FR-005a.  
+**Constraints**:
+- MUST use IAM DB auth by default (`WithIAMAuthN()`).
+- MUST use private IP for dials (`WithDefaultDialOptions(WithPrivateIP())`).
+- MUST pass OAuth-derived credentials into connector per Feature 02 (connector requires explicit token sourcing when IAM auth is enabled — see research.md).
+- MUST fail startup if authenticated principal email cannot be resolved (spec FR-010a).
+- MUST fail startup when permission pre-flight outcome is unknown (network/API ambiguity) — spec FR-005a.
 - No stack traces or secret material in STDERR/STDOUT messages.
 
 **Scale/Scope**: Single-process, multi-connection local relay; IAM / Cloud SQL quotas apply upstream.
@@ -108,38 +108,38 @@ No constitution gate violations requiring justification.
 
 ## Implementation Outline (from command input)
 
-1. **Initialize proxy package**  
+1. **Initialize proxy package**
    - Create `internal/proxy/` with `proxy.go` (and optional `access.go` for `VerifyAccess` cleanness).
 
-2. **Pre-flight check**  
-   - `VerifyAccess(ctx context.Context, client *http.Client, instance string) error`  
-   - Parse `project:region:name` from `instance`; call SQL Admin `Instances.Get(project, name)` using a service constructed with `option.WithHTTPClient(client)` (or shared transport consistent with auth).  
-   - Classify `403` as missing Cloud SQL / IAM access — message MUST mention DevOps escalation and reference likely roles (`roles/cloudsql.client`, `roles/iap.tunnelResourceAccessor`) without leaking internal URLs.  
+2. **Pre-flight check**
+   - `VerifyAccess(ctx context.Context, client *http.Client, instance string) error`
+   - Parse `project:region:name` from `instance`; call SQL Admin `Instances.Get(project, name)` using a service constructed with `option.WithHTTPClient(client)` (or shared transport consistent with auth).
+   - Classify `403` as missing Cloud SQL / IAM access — message MUST mention DevOps escalation and reference likely roles (`roles/cloudsql.client`, `roles/iap.tunnelResourceAccessor`) without leaking internal URLs.
    - Surfaces that are **not** definitive permission denial (network reset, DNS, 5xx, unexpected transport) → fail with **permission check unavailable** (FR-005a).
 
-3. **Dialer initialization**  
-   - Exported `Start(ctx context.Context, listener net.Listener, instance string, httpClient *http.Client) error` (signature may grow with explicit `oauth2.TokenSource` pairs — see `research.md` R-001 / R-005).  
-   - `cloudsqlconn.NewDialer(ctx, …)` with:  
-     - `cloudsqlconn.WithIAMAuthN()`  
-     - `cloudsqlconn.WithDefaultDialOptions(cloudsqlconn.WithPrivateIP())`  
-     - `cloudsqlconn.WithIAMAuthNTokenSources(adminTokenSource, iamLoginTokenSource)` (avoid relying on `httpClient` alone — it does not satisfy IAM login token requirements).  
-     - Optional `cloudsqlconn.WithHTTPClient(httpClient)` **only** when it matches the same OAuth transport and does not duplicate/conflict with token source configuration.  
+3. **Dialer initialization**
+   - Exported `Start(ctx context.Context, listener net.Listener, instance string, httpClient *http.Client) error` (signature may grow with explicit `oauth2.TokenSource` pairs — see `research.md` R-001 / R-005).
+   - `cloudsqlconn.NewDialer(ctx, …)` with:
+     - `cloudsqlconn.WithIAMAuthN()`
+     - `cloudsqlconn.WithDefaultDialOptions(cloudsqlconn.WithPrivateIP())`
+     - `cloudsqlconn.WithIAMAuthNTokenSources(adminTokenSource, iamLoginTokenSource)` (avoid relying on `httpClient` alone — it does not satisfy IAM login token requirements).
+     - Optional `cloudsqlconn.WithHTTPClient(httpClient)` **only** when it matches the same OAuth transport and does not duplicate/conflict with token source configuration.
    - After successful init, print connection instructions (host `127.0.0.1`, active port, email, `[LEAVE EMPTY]` password line).
 
-4. **Connection loop**  
-   - `for { conn, err := listener.Accept(); … }` with `ctx` cancellation closing listener (existing `main` pattern).  
+4. **Connection loop**
+   - `for { conn, err := listener.Accept(); … }` with `ctx` cancellation closing listener (existing `main` pattern).
    - Per connection: `dialer.Dial(ctx, instance)` (or child context with timeout if needed — document in implementation), `defer` close both conns, `go io.Copy(local, remote)` + `io.Copy(remote, local)` in handler goroutine, ensure errors do not kill process (log to STDERR concisely).
 
-5. **Wire `cmd/sql-proxy/main.go`**  
-   - After `config.Init()` and successful `net.Listen("tcp", "127.0.0.1:port")`:  
-     - Require successful `auth.GetClient(ctx)` for this feature path (missing OAuth client credentials or token failure → user-facing fatal error, not silent continue).  
-     - Resolve user email for instructions; fail before serving if missing (FR-010a).  
-     - Call `proxy.VerifyAccess` then `proxy.Start`.  
+5. **Wire `cmd/sql-proxy/main.go`**
+   - After `config.Init()` and successful `net.Listen("tcp", "127.0.0.1:port")`:
+     - Require successful `auth.GetClient(ctx)` for this feature path (missing OAuth client credentials or token failure → user-facing fatal error, not silent continue).
+     - Resolve user email for instructions; fail before serving if missing (FR-010a).
+     - Call `proxy.VerifyAccess` then `proxy.Start`.
    - Preserve signal-driven shutdown: closing listener unblocks Accept; ensure dialer `Close` on exit.
 
 ## Post-Design Constitution Re-Check
 
-- [x] IAM + private IP defaults explicit in design and contract.  
-- [x] Context cancellation and per-connection isolation captured.  
-- [x] Error UX remains non-technical and avoids secret leakage.  
+- [x] IAM + private IP defaults explicit in design and contract.
+- [x] Context cancellation and per-connection isolation captured.
+- [x] Error UX remains non-technical and avoids secret leakage.
 - [x] Test strategy covers permission mapping and relay lifecycle without mandating live cloud in default unit runs.

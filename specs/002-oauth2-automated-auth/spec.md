@@ -1,8 +1,8 @@
 # Feature Specification: OAuth2 Automated Authentication
 
-**Feature Branch**: `002-oauth2-automated-auth`  
-**Created**: 2026-05-05  
-**Status**: Draft  
+**Feature Branch**: `002-oauth2-automated-auth`
+**Created**: 2026-05-05
+**Status**: Draft
 **Input**: User description: "Spec 02: OAuth2 Automated Authentication"
 
 ## Clarifications

@@ -1,8 +1,8 @@
 # Feature Specification: Cloud SQL Proxy and IAP Tunneling
 
-**Feature Branch**: `003-cloud-sql-iap-tunnel`  
-**Created**: 2026-05-05  
-**Status**: Draft  
+**Feature Branch**: `003-cloud-sql-iap-tunnel`
+**Created**: 2026-05-05
+**Status**: Draft
 **Input**: User description: "Spec 03: Cloud SQL Proxy and IAP Tunneling"
 
 ## Clarifications

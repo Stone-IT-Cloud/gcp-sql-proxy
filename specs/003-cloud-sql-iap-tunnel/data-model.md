@@ -34,8 +34,8 @@ Structured outcome of startup checks before accept loop.
 
 Rules:
 
-- `403` + permission semantics → `denied`.  
-- Missing instance / access not found → distinct `denied` variant (not identical copy to IAM denial).  
+- `403` + permission semantics → `denied`.
+- Missing instance / access not found → distinct `denied` variant (not identical copy to IAM denial).
 - Network / 5xx / non-classified → `unknown` (must trigger FR-005a messaging path).
 
 ---
@@ -52,9 +52,9 @@ One accepted local socket paired with one upstream `Dial` result.
 
 Lifecycle:
 
-1. Accept local.  
-2. Dial remote (honor context).  
-3. Start bidirectional `io.Copy`.  
+1. Accept local.
+2. Dial remote (honor context).
+3. Start bidirectional `io.Copy`.
 4. On any direction completion / error, close both sides idempotently.
 
 Invariant: failures here MUST NOT abort unrelated relay sessions (FR-009 / SC-004).

@@ -12,15 +12,15 @@ authenticated HTTP client for Cloud SQL dialer initialization.
 
 ## Technical Context
 
-**Language/Version**: Go (stable current release via Go modules)  
-**Primary Dependencies**: `golang.org/x/oauth2`, `golang.org/x/oauth2/google`  
-**Storage**: Local filesystem token store (`~/.sql-proxy/token.json`)  
-**Testing**: Go `testing` package with table-driven unit tests and integration tests  
-**Target Platform**: Linux, Windows, macOS  
-**Project Type**: CLI application  
-**Performance Goals**: Valid token startup path reuses credentials without browser flow in under 2 seconds  
+**Language/Version**: Go (stable current release via Go modules)
+**Primary Dependencies**: `golang.org/x/oauth2`, `golang.org/x/oauth2/google`
+**Storage**: Local filesystem token store (`~/.sql-proxy/token.json`)
+**Testing**: Go `testing` package with table-driven unit tests and integration tests
+**Target Platform**: Linux, Windows, macOS
+**Project Type**: CLI application
+**Performance Goals**: Valid token startup path reuses credentials without browser flow in under 2 seconds
 **Constraints**: Token file permissions must be owner-only; callback state must be strictly validated;
-local callback defaults to `8080` with dynamic localhost fallback if occupied  
+local callback defaults to `8080` with dynamic localhost fallback if occupied
 **Scale/Scope**: Single-user local auth session flow per process execution
 
 ## Constitution Check
