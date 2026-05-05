@@ -89,7 +89,7 @@ triggered, a new token is saved, and local temporary callback server shuts down.
 
 - **FR-001**: System MUST authenticate users through a desktop three-legged OAuth2 authorization flow.
 - **FR-002**: System MUST request Cloud SQL Admin access scope for authentication.
-- **FR-003**: System MUST use localhost callback endpoint `http://localhost:8080` for OAuth redirects.
+- **FR-003**: System MUST use localhost callback endpoint `http://localhost:8080` as the default OAuth redirect endpoint.
 - **FR-004**: System MUST request offline access so long-lived refresh credentials can be issued.
 - **FR-005**: System MUST store token credentials at `~/.sql-proxy/token.json`.
 - **FR-006**: System MUST enforce restricted token file permissions equivalent to owner-only read/write.
