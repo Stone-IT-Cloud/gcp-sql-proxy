@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth"
 	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/config"
 )
 
@@ -35,18 +36,22 @@ func run() int {
 	}
 	defer listener.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(sigCh)
+	// OAuth credentials are optional in local/test environments; if configured,
+	// perform auth bootstrap for downstream dialer initialization.
+	if client, err := auth.GetClient(ctx); err == nil {
+		_ = client
+	} else if !errors.Is(err, auth.ErrMissingCredentials) {
+		fmt.Fprintf(os.Stderr, "Authentication unavailable: %v\n", err)
+		return 1
+	}
 
 	go func() {
-		<-sigCh
+		<-ctx.Done()
 		fmt.Fprintln(os.Stdout, "Shutting down proxy...")
 		_ = listener.Close()
-		cancel()
 	}()
 
 	for {
