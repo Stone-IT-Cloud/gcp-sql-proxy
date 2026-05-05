@@ -1,0 +1,67 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build-${{ matrix.target_os }}-${{ matrix.target_arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target_os: linux
+            target_arch: amd64
+          - os: windows-2025-vs2026
+            target_os: windows
+            target_arch: amd64
+          - os: macos-latest
+            target_os: darwin
+            target_arch: amd64
+          - os: macos-latest
+            target_os: darwin
+            target_arch: arm64
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build binary
+        shell: bash
+        env:
+          GOOS: ${{ matrix.target_os }}
+          GOARCH: ${{ matrix.target_arch }}
+          VERSION: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_KEY_SECRET: ${{ secrets.API_KEY_SECRET }}
+        run: |
+          ext=""
+          if [[ "${GOOS}" == "windows" ]]; then
+            ext=".exe"
+          fi
+          binary_name="gcp-db-proxy-${GOOS}-${GOARCH}${ext}"
+          mkdir -p dist
+          go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT_SHA} -X github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth.OAuthClientID=${API_KEY_ID} -X github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth.OAuthClientSecret=${API_KEY_SECRET}" \
+            -o "dist/${binary_name}" ./cmd/sql-proxy
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}${{ matrix.target_os == 'windows' && '.exe' || '' }}
+          path: dist/gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}${{ matrix.target_os == 'windows' && '.exe' || '' }}
+          retention-days: 14

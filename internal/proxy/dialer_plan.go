@@ -6,11 +6,10 @@ type DialerPlan struct {
 	UsePrivateIP bool
 }
 
-// DefaultDialerPlan enforces the security baseline for this feature:
-// IAM database authentication and private IP connectivity.
-func DefaultDialerPlan() DialerPlan {
+// DefaultDialerPlan enforces IAM auth and defaults to public IP unless specified.
+func DefaultDialerPlan(usePrivateIP bool) DialerPlan {
 	return DialerPlan{
 		UseIAMAuthN:  true,
-		UsePrivateIP: true,
+		UsePrivateIP: usePrivateIP,
 	}
 }

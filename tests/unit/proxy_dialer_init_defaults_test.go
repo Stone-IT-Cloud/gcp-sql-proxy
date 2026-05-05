@@ -27,8 +27,9 @@ func TestStartInitializesDialerUsingInjectedFactory(t *testing.T) {
 	httpClient := &http.Client{}
 	calledCh := make(chan struct{}, 1)
 
-	restoreDialer := proxy.SetTestDialerFactory(func(givenCtx context.Context, givenClient *http.Client) (proxy.CloudSQLDialer, error) {
+	restoreDialer := proxy.SetTestDialerFactory(func(givenCtx context.Context, givenClient *http.Client, usePrivateIP bool) (proxy.CloudSQLDialer, error) {
 		_ = givenCtx
+		_ = usePrivateIP
 		if givenClient != httpClient {
 			t.Fatalf("httpClient pointer mismatch: got %p, want %p", givenClient, httpClient)
 		}
@@ -38,7 +39,7 @@ func TestStartInitializesDialerUsingInjectedFactory(t *testing.T) {
 	defer restoreDialer()
 
 	done := make(chan error, 1)
-	go func() { done <- proxy.Start(ctx, listener, "project:region:instance", httpClient) }()
+	go func() { done <- proxy.Start(ctx, listener, "project:region:instance", httpClient, false) }()
 
 	select {
 	case <-calledCh:

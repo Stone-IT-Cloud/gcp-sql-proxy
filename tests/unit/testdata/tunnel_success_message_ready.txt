@@ -1,0 +1,6 @@
+Tunnel connection established.
+Target instance: project:region:instance
+Host: 127.0.0.1
+Port: 5432
+User: user@example.com
+Password: <db_password>

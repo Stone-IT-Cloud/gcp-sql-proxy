@@ -1,0 +1,4 @@
+[started] hooks: hook started
+[completed] hooks: hook completed
+[started] generation: phase started
+[completed] generation: phase completed

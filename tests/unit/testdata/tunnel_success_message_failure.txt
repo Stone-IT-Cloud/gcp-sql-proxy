@@ -1,0 +1,2 @@
+Connection failed.
+No tunnel ready message should be displayed on startup failure.

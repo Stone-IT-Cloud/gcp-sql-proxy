@@ -15,6 +15,12 @@ import (
 	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/proxy"
 )
 
+// Build metadata injected at compile time via -ldflags.
+var (
+	version = "dev"
+	commit  = "unknown"
+)
+
 func main() {
 	os.Exit(run())
 }
@@ -51,6 +57,16 @@ func run() int {
 	// Keep existing behavior for "no OAuth creds": keep listener alive so startup
 	// + signal shutdown tests remain stable, but do not attempt tunnel dial.
 	if err != nil && errors.Is(err, auth.ErrMissingCredentials) {
+		mode := "public"
+		if settings.UsePrivateIP {
+			mode = "private"
+		}
+		fmt.Fprintf(
+			os.Stdout,
+			"Listener active on %s (IP mode: %s), but tunnel is not established: OAuth client credentials are missing.\n",
+			addr,
+			mode,
+		)
 		go func() {
 			<-ctx.Done()
 			fmt.Fprintln(os.Stdout, "Shutting down proxy...")
@@ -80,7 +96,7 @@ func run() int {
 	}
 
 	// proxy.Start prints connection instructions on successful initialization.
-	if err := proxy.Start(ctx, listener, settings.Instance, client); err != nil {
+	if err := proxy.Start(ctx, listener, settings.Instance, client, settings.UsePrivateIP); err != nil {
 		// Keep user-facing error stable and avoid leaking secrets.
 		fmt.Fprintln(os.Stderr, proxy.UserFacingError(err))
 		// Best-effort wait so tests that interrupt quickly still exit cleanly.

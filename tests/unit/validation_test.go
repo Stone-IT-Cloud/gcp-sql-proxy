@@ -33,6 +33,11 @@ func TestInitWithArgsValidationFailures(t *testing.T) {
 			cfgBody: "port: [",
 			wantErr: config.ErrMalformedConfig,
 		},
+		{
+			name:    "conflicting ip flags",
+			args:    []string{"--instance", "x:y:z", "--private-ip", "--public-ip"},
+			wantErr: config.ErrConflictingIPMode,
+		},
 	}
 
 	for _, tt := range tests {
@@ -70,6 +75,7 @@ func TestUserFacingErrorMessages(t *testing.T) {
 		{err: config.ErrMissingInstance, contains: "Missing instance"},
 		{err: config.ErrInvalidPort, contains: "Invalid port"},
 		{err: config.ErrMalformedConfig, contains: "Invalid configuration"},
+		{err: config.ErrConflictingIPMode, contains: "Invalid IP mode"},
 	}
 
 	for _, tc := range cases {

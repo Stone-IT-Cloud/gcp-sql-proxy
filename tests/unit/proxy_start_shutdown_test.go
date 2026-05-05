@@ -28,14 +28,15 @@ func TestStartAcceptLoopTerminatesOnContextCancellation(t *testing.T) {
 	defer restoreEmail()
 
 	// Avoid cloud dialer initialization.
-	restoreDialer := proxy.SetTestDialerFactory(func(ctx context.Context, _ *http.Client) (proxy.CloudSQLDialer, error) {
+	restoreDialer := proxy.SetTestDialerFactory(func(ctx context.Context, _ *http.Client, usePrivateIP bool) (proxy.CloudSQLDialer, error) {
 		_ = ctx
+		_ = usePrivateIP
 		return &dummyDialer{}, nil
 	})
 	defer restoreDialer()
 
 	startErrCh := make(chan error, 1)
-	go func() { startErrCh <- proxy.Start(ctx, listener, "project:region:instance", &http.Client{}) }()
+	go func() { startErrCh <- proxy.Start(ctx, listener, "project:region:instance", &http.Client{}, false) }()
 
 	// Cancel shortly after startup to force listener close and Accept() unblocking.
 	time.Sleep(50 * time.Millisecond)
