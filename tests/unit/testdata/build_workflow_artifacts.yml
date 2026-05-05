@@ -1,0 +1,4 @@
+artifact_per_target: true
+retention_days: 14
+uploader: actions/upload-artifact@v4
+artifact_name_format: gcp-db-proxy-<target_os>-<target_arch>

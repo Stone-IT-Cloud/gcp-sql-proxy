@@ -1,0 +1,65 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build-${{ matrix.target_os }}-${{ matrix.target_arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target_os: linux
+            target_arch: amd64
+          - os: windows-latest
+            target_os: windows
+            target_arch: amd64
+          - os: macos-latest
+            target_os: darwin
+            target_arch: amd64
+          - os: macos-latest
+            target_os: darwin
+            target_arch: arm64
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build binary
+        shell: bash
+        env:
+          GOOS: ${{ matrix.target_os }}
+          GOARCH: ${{ matrix.target_arch }}
+          VERSION: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          ext=""
+          if [[ "${GOOS}" == "windows" ]]; then
+            ext=".exe"
+          fi
+          binary_name="gcp-db-proxy-${GOOS}-${GOARCH}${ext}"
+          mkdir -p dist
+          go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT_SHA}" \
+            -o "dist/${binary_name}" ./cmd/sql-proxy
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}
+          path: dist/gcp-db-proxy-${{ matrix.target_os }}-${{ matrix.target_arch }}*
+          retention-days: 14
