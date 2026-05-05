@@ -64,11 +64,17 @@ func (d *singleDialDialer) Close() error { return nil }
 
 func TestProxyTunnelShutdownClosesRelayConnections(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	listener := newChanListener(55436)
+	defer listener.Close()
 
 	remoteServerConn, remoteDialerConn := net.Pipe()
+	defer remoteServerConn.Close()
+	defer remoteDialerConn.Close()
 	localClientConn, localStartConn := net.Pipe()
+	defer localClientConn.Close()
+	defer localStartConn.Close()
 
 	restoreEmail := proxy.SetTestPrincipalEmail(func(_ context.Context, _ *http.Client) (string, error) {
 		return "user@example.com", nil

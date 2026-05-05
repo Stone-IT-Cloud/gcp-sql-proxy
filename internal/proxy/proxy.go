@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth"
@@ -136,7 +137,9 @@ func Start(ctx context.Context, listener net.Listener, instance string, httpClie
 			if ctx.Err() != nil || errors.Is(acceptErr, net.ErrClosed) {
 				return nil
 			}
-			// Non-fatal listener issues: continue accepting.
+			fmt.Fprintf(os.Stderr, "Proxy listener accept error: %v\n", acceptErr)
+			// Prevent tight CPU spin if the listener enters a persistent error state.
+			time.Sleep(50 * time.Millisecond)
 			continue
 		}
 
@@ -151,10 +154,15 @@ func Start(ctx context.Context, listener net.Listener, instance string, httpClie
 			defer remote.Close()
 
 			// Ensure ctx cancellation terminates active relays promptly.
+			connDone := make(chan struct{})
+			defer close(connDone)
 			go func() {
-				<-ctx.Done()
-				_ = local.Close()
-				_ = remote.Close()
+				select {
+				case <-ctx.Done():
+					_ = local.Close()
+					_ = remote.Close()
+				case <-connDone:
+				}
 			}()
 
 			relayBidirectional(local, remote)
@@ -165,11 +173,17 @@ func Start(ctx context.Context, listener net.Listener, instance string, httpClie
 func relayBidirectional(local net.Conn, remote net.Conn) {
 	// Bidirectional relay. This is intentionally symmetric and bounded by conn closure.
 	var wg sync.WaitGroup
+	var closeOnce sync.Once
 	wg.Add(2)
 
 	copyFn := func(dst, src net.Conn) {
 		defer wg.Done()
 		_, _ = io.Copy(dst, src)
+		// Unblock the opposite copy direction if one side exits first.
+		closeOnce.Do(func() {
+			_ = local.Close()
+			_ = remote.Close()
+		})
 	}
 
 	go copyFn(local, remote)

@@ -66,7 +66,7 @@ func UserFacingError(err error) string {
 		)
 	}
 
-	var unavailable PermissionCheckUnavailableError
+	var unavailable *PermissionCheckUnavailableError
 	if errors.As(err, &unavailable) {
 		return "Permission check unavailable due to network/API uncertainty. Please verify connectivity and retry."
 	}

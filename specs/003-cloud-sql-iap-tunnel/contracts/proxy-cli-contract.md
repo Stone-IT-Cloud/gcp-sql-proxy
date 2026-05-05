@@ -15,13 +15,14 @@ Define operator-visible behavior for bridging `127.0.0.1:<port>` to Cloud SQL Po
 | Step | Behavior |
 |------|----------|
 | S1 | Parse settings (`internal/config`). |
-| S2 | Acquire authenticated credential via `auth.GetClient` — **hard failure** if interactive / persisted auth cannot proceed (this feature requires an authenticated user). |
-| S3 | Resolve **`principalEmail`** — **hard failure** before listening if missing (FR-010a). |
-| S4 | Bind TCP listener on `127.0.0.1:<activePort>`. |
+| S2 | Bind TCP listener on `127.0.0.1:<activePort>`. |
+| S3 | Acquire authenticated credential via `auth.GetClient`; on non-missing-credentials errors, fail startup with actionable messaging. |
+| S4 | In the missing-credentials path, current CLI behavior preserves a local listener loop for compatibility and exits only on signal-driven shutdown. |
 | S5 | Run `VerifyAccess` (`sqladmin.instances.get` semantics) — failures classified per FR-005 / FR-005a. |
-| S6 | Construct Cloud SQL dialer with IAM auth + private IP defaults (see plan + research). |
-| S7 | Print `ConnectionInstructions` block to STDOUT. |
-| S8 | Enter accept loop until context cancellation or fatal listener error. |
+| S6 | Resolve **`principalEmail`** during `Start`; fail startup if missing (FR-010a). |
+| S7 | Construct Cloud SQL dialer with IAM auth + private IP defaults (see plan + research). |
+| S8 | Print `ConnectionInstructions` block to STDOUT. |
+| S9 | Enter accept loop until context cancellation or fatal listener error. |
 
 ## Runtime Contract
 
