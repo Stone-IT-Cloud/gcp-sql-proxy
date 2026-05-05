@@ -1,0 +1,1 @@
+[failed] generation: phase failed: boom (Check spec inputs and rerun /speckit-specify.)

@@ -46,16 +46,17 @@ func TestStartRelayBidirectionalAndDialFailureIsolation(t *testing.T) {
 		},
 	}
 
-	restoreDialer := proxy.SetTestDialerFactory(func(ctx context.Context, httpClient *http.Client) (proxy.CloudSQLDialer, error) {
+	restoreDialer := proxy.SetTestDialerFactory(func(ctx context.Context, httpClient *http.Client, usePrivateIP bool) (proxy.CloudSQLDialer, error) {
 		_ = ctx
 		_ = httpClient
+		_ = usePrivateIP
 		return dialer, nil
 	})
 	defer restoreDialer()
 
 	// Start proxy.
 	startErrCh := make(chan error, 1)
-	go func() { startErrCh <- proxy.Start(ctx, listener, "project:region:instance", &http.Client{}) }()
+	go func() { startErrCh <- proxy.Start(ctx, listener, "project:region:instance", &http.Client{}, false) }()
 
 	// Enqueue two local connections concurrently.
 	listener.conns <- localStart1
@@ -63,7 +64,7 @@ func TestStartRelayBidirectionalAndDialFailureIsolation(t *testing.T) {
 
 	// Wait for instruction block to be emitted.
 	ok := waitUntil(func() bool {
-		return strings.Contains(instructions.String(), "Password: [LEAVE EMPTY]") &&
+		return strings.Contains(instructions.String(), "Password: <db_password>") &&
 			strings.Contains(instructions.String(), "User: user@example.com")
 	}, 2*time.Second)
 	if !ok {
@@ -146,10 +147,11 @@ func TestStartRelayBidirectionalAndDialFailureIsolation(t *testing.T) {
 
 	out := instructions.String()
 	for _, mustContain := range []string{
+		"Tunnel connection established.",
 		"Host: 127.0.0.1",
 		"Port: 55433",
 		"User: user@example.com",
-		"Password: [LEAVE EMPTY]",
+		"Password: <db_password>",
 	} {
 		if !strings.Contains(out, mustContain) {
 			t.Fatalf("instructions missing %q; got:\n%s", mustContain, out)

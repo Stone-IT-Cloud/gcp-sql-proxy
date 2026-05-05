@@ -47,6 +47,8 @@ jobs:
           GOARCH: ${{ matrix.target_arch }}
           VERSION: ${{ github.ref_name }}
           COMMIT_SHA: ${{ github.sha }}
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_KEY_SECRET: ${{ secrets.API_KEY_SECRET }}
         run: |
           ext=""
           if [[ "${GOOS}" == "windows" ]]; then
@@ -54,7 +56,7 @@ jobs:
           fi
           binary_name="gcp-db-proxy-${GOOS}-${GOARCH}${ext}"
           mkdir -p dist
-          go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT_SHA}" \
+          go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT_SHA} -X github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth.OAuthClientID=${API_KEY_ID} -X github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth.OAuthClientSecret=${API_KEY_SECRET}" \
             -o "dist/${binary_name}" ./cmd/sql-proxy
 
       - name: Upload artifact

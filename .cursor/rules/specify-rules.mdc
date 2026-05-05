@@ -4,5 +4,5 @@ alwaysApply: true
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read `specs/005-github-actions-build-pipeline/plan.md`
+shell commands, and other important information, read `specs/007-postgres-tunnel-success-message/plan.md`
 <!-- SPECKIT END -->

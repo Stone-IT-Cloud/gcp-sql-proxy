@@ -15,12 +15,14 @@ func TestInitWithArgsPrecedence(t *testing.T) {
 		args         []string
 		wantPort     int
 		wantInstance string
+		wantPrivate  bool
 	}{
 		{
 			name:         "defaults when config missing",
 			args:         []string{"--instance", "project:region:inst"},
 			wantPort:     5432,
 			wantInstance: "project:region:inst",
+			wantPrivate:  false,
 		},
 		{
 			name:         "config used when flags missing",
@@ -28,6 +30,7 @@ func TestInitWithArgsPrecedence(t *testing.T) {
 			args:         []string{},
 			wantPort:     6000,
 			wantInstance: "cfg:region:inst",
+			wantPrivate:  false,
 		},
 		{
 			name:         "flags override config",
@@ -35,6 +38,14 @@ func TestInitWithArgsPrecedence(t *testing.T) {
 			args:         []string{"--port", "7000", "--instance", "flag:region:inst"},
 			wantPort:     7000,
 			wantInstance: "flag:region:inst",
+			wantPrivate:  false,
+		},
+		{
+			name:         "private flag overrides default public",
+			args:         []string{"--instance", "project:region:inst", "--private-ip"},
+			wantPort:     5432,
+			wantInstance: "project:region:inst",
+			wantPrivate:  true,
 		},
 	}
 
@@ -64,6 +75,9 @@ func TestInitWithArgsPrecedence(t *testing.T) {
 			}
 			if got.Instance != tt.wantInstance {
 				t.Fatalf("instance = %q, want %q", got.Instance, tt.wantInstance)
+			}
+			if got.UsePrivateIP != tt.wantPrivate {
+				t.Fatalf("UsePrivateIP = %v, want %v", got.UsePrivateIP, tt.wantPrivate)
 			}
 		})
 	}

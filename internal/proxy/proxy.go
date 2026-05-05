@@ -26,10 +26,15 @@ var (
 
 	// dialerFactoryFn creates the cloudsqlconn dialer.
 	// It is overridden in unit tests to avoid network/cloud dependencies.
-	dialerFactoryFn = func(ctx context.Context, httpClient *http.Client) (CloudSQLDialer, error) {
+	dialerFactoryFn = func(ctx context.Context, httpClient *http.Client, usePrivateIP bool) (CloudSQLDialer, error) {
 		adminTokenSource, iamLoginTokenSource, err := auth.CloudSQLConnectorTokenSources(ctx)
 		if err != nil {
 			return nil, err
+		}
+
+		dialOpts := []cloudsqlconn.DialOption{}
+		if usePrivateIP {
+			dialOpts = append(dialOpts, cloudsqlconn.WithPrivateIP())
 		}
 
 		// IMPORTANT: even though httpClient is used for SQL Admin pre-flight,
@@ -37,7 +42,7 @@ var (
 		return cloudsqlconn.NewDialer(
 			ctx,
 			cloudsqlconn.WithIAMAuthN(),
-			cloudsqlconn.WithDefaultDialOptions(cloudsqlconn.WithPrivateIP()),
+			cloudsqlconn.WithDefaultDialOptions(dialOpts...),
 			cloudsqlconn.WithIAMAuthNTokenSources(adminTokenSource, iamLoginTokenSource),
 			cloudsqlconn.WithHTTPClient(httpClient),
 		)
@@ -47,7 +52,7 @@ var (
 )
 
 // SetTestDialerFactory overrides the dialer factory used by Start.
-func SetTestDialerFactory(fn func(ctx context.Context, httpClient *http.Client) (CloudSQLDialer, error)) (restore func()) {
+func SetTestDialerFactory(fn func(ctx context.Context, httpClient *http.Client, usePrivateIP bool) (CloudSQLDialer, error)) (restore func()) {
 	prev := dialerFactoryFn
 	if fn != nil {
 		dialerFactoryFn = fn
@@ -81,7 +86,7 @@ func SetTestInstructionsWriter(w io.Writer) (restore func()) {
 
 // Start starts a local TCP listener accept loop and forwards each incoming
 // connection to the target Cloud SQL instance using the Cloud SQL Go connector.
-func Start(ctx context.Context, listener net.Listener, instance string, httpClient *http.Client) error {
+func Start(ctx context.Context, listener net.Listener, instance string, httpClient *http.Client, usePrivateIP bool) error {
 	if ctx == nil {
 		return errors.New("Start: missing ctx")
 	}
@@ -92,8 +97,8 @@ func Start(ctx context.Context, listener net.Listener, instance string, httpClie
 		return errors.New("Start: missing instance")
 	}
 
-	plan := DefaultDialerPlan()
-	if !plan.UseIAMAuthN || !plan.UsePrivateIP {
+	plan := DefaultDialerPlan(usePrivateIP)
+	if !plan.UseIAMAuthN {
 		return fmt.Errorf("Start: invalid dialer plan (IAM=%v, PrivateIP=%v)", plan.UseIAMAuthN, plan.UsePrivateIP)
 	}
 
@@ -109,13 +114,13 @@ func Start(ctx context.Context, listener net.Listener, instance string, httpClie
 	}
 
 	// Ensure the dialer is closed on shutdown.
-	dialer, err := dialerFactoryFn(ctx, httpClient)
+	dialer, err := dialerFactoryFn(ctx, httpClient, plan.UsePrivateIP)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = dialer.Close() }()
 
-	if _, err := fmt.Fprint(instructionsWriter, ConnectionInstructions(tcpAddr.Port, email)); err != nil {
+	if err := emitTunnelReadyMessage(instructionsWriter, tcpAddr.Port, instance, email, false, plan.UsePrivateIP); err != nil {
 		return fmt.Errorf("Start: write connection instructions: %w", err)
 	}
 
@@ -151,6 +156,9 @@ func Start(ctx context.Context, listener net.Listener, instance string, httpClie
 				return
 			}
 			defer remote.Close()
+
+			// Emit full guidance on each successful reconnect/dial event.
+			_ = emitTunnelReadyMessage(instructionsWriter, tcpAddr.Port, instance, email, true, plan.UsePrivateIP)
 
 			// Ensure ctx cancellation terminates active relays promptly.
 			connDone := make(chan struct{})

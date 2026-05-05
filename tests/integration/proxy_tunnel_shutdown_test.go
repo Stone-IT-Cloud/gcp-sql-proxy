@@ -77,14 +77,15 @@ func TestProxyTunnelShutdownClosesRelayConnections(t *testing.T) {
 	restoreWriter := proxy.SetTestInstructionsWriter(ioDiscard{})
 	defer restoreWriter()
 
-	restoreDialer := proxy.SetTestDialerFactory(func(_ context.Context, _ *http.Client) (proxy.CloudSQLDialer, error) {
+	restoreDialer := proxy.SetTestDialerFactory(func(_ context.Context, _ *http.Client, usePrivateIP bool) (proxy.CloudSQLDialer, error) {
+		_ = usePrivateIP
 		// Provide the dialed remote connection for the accepted local socket.
 		return &shutdownDialer{remote: remoteDialerConn}, nil
 	})
 	defer restoreDialer()
 
 	startErrCh := make(chan error, 1)
-	go func() { startErrCh <- proxy.Start(ctx, listener, "project:region:instance", &http.Client{}) }()
+	go func() { startErrCh <- proxy.Start(ctx, listener, "project:region:instance", &http.Client{}, false) }()
 
 	// Feed one accepted connection.
 	listener.conns <- localStartConn
