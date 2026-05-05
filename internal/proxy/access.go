@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth"
-	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sqladmin/v1beta4"
@@ -71,10 +69,3 @@ func VerifyAccess(ctx context.Context, client *http.Client, instance string) err
 	// Transport errors, timeouts, and unknown failures.
 	return &PermissionCheckUnavailableError{Cause: err}
 }
-
-// Ensure we reference oauth2 and auth packages to keep imports stable for future wiring.
-// (This file focuses on VerifyAccess; dialer token sources live elsewhere.)
-var (
-	_ = auth.ErrMissingCredentials
-	_ = oauth2.Token{}
-)

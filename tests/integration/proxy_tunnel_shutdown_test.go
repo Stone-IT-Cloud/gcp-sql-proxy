@@ -30,6 +30,12 @@ func newChanListener(port int) *chanListener {
 
 func (l *chanListener) Accept() (net.Conn, error) {
 	select {
+	case <-l.closed:
+		return nil, net.ErrClosed
+	default:
+	}
+
+	select {
 	case c := <-l.conns:
 		return c, nil
 	case <-l.closed:
@@ -48,19 +54,6 @@ func (l *chanListener) Close() error {
 }
 
 func (l *chanListener) Addr() net.Addr { return l.addr }
-
-type singleDialDialer struct {
-	remote net.Conn
-}
-
-func (d *singleDialDialer) Dial(ctx context.Context, instance string, opts ...any) (net.Conn, error) {
-	_ = ctx
-	_ = instance
-	_ = opts
-	return d.remote, nil
-}
-
-func (d *singleDialDialer) Close() error { return nil }
 
 func TestProxyTunnelShutdownClosesRelayConnections(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

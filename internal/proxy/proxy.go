@@ -13,7 +13,6 @@ import (
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/Stone-IT-Cloud/gcp-sql-proxy/internal/auth"
-	"golang.org/x/oauth2"
 )
 
 // CloudSQLDialer is the minimal interface Start needs.
@@ -191,6 +190,3 @@ func relayBidirectional(local net.Conn, remote net.Conn) {
 
 	wg.Wait()
 }
-
-// Keep oauth2 imported in this file for compilation stability when used by connector option wiring.
-var _ oauth2.TokenSource

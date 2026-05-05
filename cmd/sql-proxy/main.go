@@ -64,6 +64,7 @@ func run() int {
 					break
 				}
 				fmt.Fprintf(os.Stderr, "Listener error: %v\n", acceptErr)
+				time.Sleep(10 * time.Millisecond)
 				continue
 			}
 			_ = conn.Close()

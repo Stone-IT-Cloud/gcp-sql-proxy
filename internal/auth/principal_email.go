@@ -28,22 +28,22 @@ func PrincipalEmail(ctx context.Context, httpClient *http.Client) (string, error
 
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, "https://www.googleapis.com/oauth2/v3/userinfo", nil)
 	if err != nil {
-		return "", fmt.Errorf("principal email: build request: %w", err)
+		return "", fmt.Errorf("principal email: build request: %w: %w", err, ErrMissingPrincipalEmail)
 	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("principal email: call userinfo endpoint: %w", err)
+		return "", fmt.Errorf("principal email: call userinfo endpoint: %w: %w", err, ErrMissingPrincipalEmail)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("principal email: unexpected userinfo status: %s", resp.Status)
+		return "", fmt.Errorf("principal email: unexpected userinfo status: %s: %w", resp.Status, ErrMissingPrincipalEmail)
 	}
 
 	var parsed userInfoEmailResponse
 	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
-		return "", fmt.Errorf("principal email: decode response: %w", err)
+		return "", fmt.Errorf("principal email: decode response: %w: %w", err, ErrMissingPrincipalEmail)
 	}
 	if parsed.Email == "" {
 		return "", ErrMissingPrincipalEmail

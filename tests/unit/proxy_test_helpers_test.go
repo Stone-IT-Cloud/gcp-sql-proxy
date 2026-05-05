@@ -30,6 +30,12 @@ func newConnChanListener(port int) *connChanListener {
 
 func (l *connChanListener) Accept() (net.Conn, error) {
 	select {
+	case <-l.closed:
+		return nil, net.ErrClosed
+	default:
+	}
+
+	select {
 	case c := <-l.conns:
 		return c, nil
 	case <-l.closed:
